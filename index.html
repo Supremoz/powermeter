@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PowerFlow - Intelligent IoT Power Tracker</title>
+    <link rel="stylesheet" href="styles.css" />
+
+    <!-- Firebase Compat SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-messaging-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+  </head>
+  <body>
+    <!-- Animated Background -->
+    <div class="bg-particles" id="particles"></div>
+
+    <!-- Header -->
+    <header>
+      <div class="logo">⚡ PowerFlow</div>
+
+      <!-- Header right section - contains both nav buttons and notification -->
+      <div class="header-right">
+        <div class="nav-buttons">
+          <button class="nav-btn" onclick="scrollToSection('features')">
+            Features
+          </button>
+          <button class="nav-btn" onclick="scrollToSection('dashboard')">
+            Dashboard
+          </button>
+        </div>
+
+        <!-- Notification container - now always visible -->
+        <div class="notification-container">
+          <button
+            class="notification-btn"
+            onclick="toggleNotificationPanel()"
+            title="Notifications"
+          >
+            🔔
+            <span class="notification-badge" id="notificationCount">0</span>
+          </button>
+          <!-- Notification Panel -->
+          <div class="notification-panel" id="notificationPanel">
+            <div class="notification-header">
+              <h3>Notifications</h3>
+              <button
+                class="clear-notifications"
+                onclick="clearAllNotifications()"
+              >
+                Clear All
+              </button>
+            </div>
+            <div class="notification-list" id="notificationList">
+              <div class="no-notifications">No new notifications</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Burger menu button -->
+        <button class="burger-menu" id="burgerMenuBtn" aria-label="Open menu">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Mobile nav (hidden by default) -->
+    <div class="mobile-nav" id="mobileNav">
+      <button class="mobile-nav-btn" onclick="scrollToSection('features')">
+        Features
+      </button>
+      <button class="mobile-nav-btn" onclick="scrollToSection('dashboard')">
+        Dashboard
+      </button>
+    </div>
+
+    <main>
+      <!-- Hero Section -->
+      <section class="hero-section">
+        <h1 class="hero-title">Intelligent Power Management</h1>
+        <p class="hero-subtitle">
+          Monitor, Control, and Optimize Your Energy Consumption in Real-Time
+        </p>
+      </section>
+
+      <!-- Real-Time Power Display -->
+      <section class="glass-section" id="dashboard">
+        <h2 class="section-title">
+          <span class="section-icon">⚡</span>
+          Live Power Metrics
+        </h2>
+        <div class="power-grid">
+          <div class="power-card">
+            <div class="power-card-title">Voltage</div>
+            <div class="power-card-value" id="voltage">--</div>
+            <div style="color: rgba(255, 255, 255, 0.8); margin-top: 0.5rem">
+              Volts
+            </div>
+          </div>
+          <div class="power-card">
+            <div class="power-card-title">Current</div>
+            <div class="power-card-value" id="current">--</div>
+            <div style="color: rgba(255, 255, 255, 0.8); margin-top: 0.5rem">
+              Amperes
+            </div>
+          </div>
+          <div class="power-card">
+            <div class="power-card-title">Power</div>
+            <div class="power-card-value" id="power">--</div>
+            <div style="color: rgba(255, 255, 255, 0.8); margin-top: 0.5rem">
+              Watts
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Consumption Summary -->
+      <section class="glass-section" id="features">
+        <h2 class="section-title">
+          <span class="section-icon">📊</span>
+          Consumption Analytics
+        </h2>
+
+        <div class="consumption-grid">
+          <div class="consumption-card">
+            <h3>Today's Usage</h3>
+            <div class="consumption-value" id="currentConsumption">--</div>
+            <div class="consumption-unit">kWh</div>
+          </div>
+          <div class="consumption-card">
+            <h3>Total Consumption</h3>
+            <div class="consumption-value" id="totalConsumption">--</div>
+            <div class="consumption-unit">kWh</div>
+          </div>
+        </div>
+
+        <!-- kWh Limit Control -->
+        <div class="limit-control">
+          <h3>🎯 Smart Consumption Limits</h3>
+          <div class="limit-inputs">
+            <input
+              type="number"
+              id="kwhLimit"
+              class="limit-input"
+              placeholder="Set daily kWh limit"
+              step="0.1"
+              min="0.1"
+            />
+            <button id="setLimitBtn" class="set-limit-btn">
+              Set Smart Limit
+            </button>
+          </div>
+          <div id="limitStatus" style="margin-top: 1rem; font-weight: 600">
+            No limit configured
+          </div>
+        </div>
+
+        <!-- Chart -->
+        <div class="chart-container">
+          <canvas id="consumptionChart"></canvas>
+        </div>
+
+        <!-- Consumption Data Table -->
+        <div id="consumptionTableContainer">
+          <h3>Detailed Consumption Readings</h3>
+          <div class="consumption-tabs">
+            <button
+              id="dailyTab"
+              class="consumption-tab active"
+              onclick="showConsumptionTable('daily')"
+            >
+              Daily
+            </button>
+            <button
+              id="weeklyTab"
+              class="consumption-tab"
+              onclick="showConsumptionTable('weekly')"
+            >
+              Weekly
+            </button>
+            <button
+              id="monthlyTab"
+              class="consumption-tab"
+              onclick="showConsumptionTable('monthly')"
+            >
+              Monthly
+            </button>
+          </div>
+          <div id="consumptionTableWrapper"></div>
+        </div>
+      </section>
+
+      <!-- Device Controls -->
+      <section class="glass-section">
+        <h2 class="section-title">
+          <span class="section-icon">🎛️</span>
+          Smart Device Controls
+        </h2>
+
+        <div class="controls-grid">
+          <div class="control-card">
+            <div class="control-header">
+              <div class="control-title">💡 Smart Lighting</div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="lightToggle" />
+                <span class="slider"></span>
+              </label>
+            </div>
+            <div id="lightStatusText">Initializing...</div>
+          </div>
+
+          <div class="control-card">
+            <div class="control-header">
+              <div class="control-title">🔌 Power Outlet</div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="outletToggle" />
+                <span class="slider"></span>
+              </label>
+            </div>
+            <div id="outletStatusText">Initializing...</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Powered Insights -->
+      <section class="glass-section">
+        <h2 class="section-title">
+          <span class="section-icon">📈</span>
+          Powered Insights
+        </h2>
+        <div
+          id="predictionText"
+          style="color: #000000; font-size: 1.1rem; line-height: 1.6"
+        >
+          Analyzing consumption patterns...
+        </div>
+      </section>
+    </main>
+
+    <!-- Notification Status -->
+    <div class="notification-status" id="notificationStatus"></div>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Custom JavaScript -->
+    <script src="script.js"></script>
+
+    <!-- Add this before the closing </body> tag -->
+    <div class="modal" id="autoOffModal" style="display: none">
+      <div class="modal-content">
+        <h2>Auto Turn-Off Devices?</h2>
+        <p>
+          Do you want to automatically turn off devices when the daily kWh limit
+          is reached?<br />
+          <small
+            >(You can change this setting anytime by setting the limit
+            again.)</small
+          >
+        </p>
+        <button
+          class="action-btn light-btn"
+          onclick="setAutoOffChoice('light')"
+        >
+          Turn Off Light
+        </button>
+        <button
+          class="action-btn outlet-btn"
+          onclick="setAutoOffChoice('outlet')"
+        >
+          Turn Off Outlet
+        </button>
+        <button class="action-btn both-btn" onclick="setAutoOffChoice('both')">
+          Turn Off Both
+        </button>
+        <button
+          class="action-btn dismiss-btn"
+          onclick="setAutoOffChoice('none')"
+        >
+          Don't Turn Off
+        </button>
+      </div>
+    </div>
+  </body>
+</html>
